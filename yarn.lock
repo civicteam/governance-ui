@@ -745,10 +745,10 @@
     bigint-buffer "^1.1.5"
     buffer-layout "^1.2.2"
 
-"@civic/common-gateway-react@^0.1.11-alpha2":
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/@civic/common-gateway-react/-/common-gateway-react-0.1.11.tgz#116c48da302cc6bfae9b284c79837d20bd8a010d"
-  integrity sha512-MrAUqkYo9VYEdXyTc4cmm+jErwLfKTvkk3EHLslN/lXPi8N9JQFpQSiLLsnq6wl1z/6biROnEhv+U4Eh38a+IQ==
+"@civic/common-gateway-react@0.2.0-alpha.5", "@civic/common-gateway-react@^0.1.11-alpha2", "@civic/common-gateway-react@^0.2.0-alpha.5":
+  version "0.2.0-alpha.5"
+  resolved "https://registry.yarnpkg.com/@civic/common-gateway-react/-/common-gateway-react-0.2.0-alpha.5.tgz#397dc8650803ea1654942a91cf8342f5f8fdad81"
+  integrity sha512-qGXwY8r5GeWdhBFRUV4FleakdDk/UtmK4v/DcjRNxxlMfgjk635tazIMBBow0QgZrzDaZnklRGVFqRKd1Q8UcA==
   dependencies:
     fetch-retry-ts "^1.1.24"
     iframe-resizer-react "^1.1.0"
