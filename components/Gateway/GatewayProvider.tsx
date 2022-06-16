@@ -35,6 +35,12 @@ export const GatewayProvider: FC = ({ children }) => {
     })
   }
 
+  const stage =
+    gatekeeperNetwork?.toBase58() ===
+    'tunQheuPpHhjjsbrUDp4rikqYez9UXv4SXLRHf9Kzsv'
+      ? 'preprod'
+      : 'prod'
+
   if (!wallet || !wallet.publicKey || !client || !gatekeeperNetwork)
     return <>{children}</>
 
@@ -42,6 +48,7 @@ export const GatewayProvider: FC = ({ children }) => {
     <InternalGatewayProvider
       clusterUrl={connection.endpoint}
       cluster={connection.cluster}
+      stage={stage}
       gatekeeperNetwork={gatekeeperNetwork}
       wallet={{
         publicKey: wallet.publicKey,

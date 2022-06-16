@@ -115,7 +115,7 @@ const CreateGatewayPluginRegistrar = ({
         },
         {
           key: 'Uniqueness',
-          value: 'uniqobk8oGh4XBLMqM68K8M2zNu3CdYX7q5go7whQiv',
+          value: 'tunQheuPpHhjjsbrUDp4rikqYez9UXv4SXLRHf9Kzsv',
         },
         {
           key: 'ID Verification',
