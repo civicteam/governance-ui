@@ -203,7 +203,7 @@ export default function useGovernanceAssets() {
     },
     {
       id: Instructions.ConfigureGatewayPlugin,
-      name: 'Civic: Configure Gateway plugin',
+      name: 'Civic: Configure existing Gateway plugin',
       isVisible: canUseAuthorityInstruction,
     },
     {
@@ -324,6 +324,11 @@ export default function useGovernanceAssets() {
     {
       id: Instructions.MangoSwapSpotMarket,
       name: 'Mango: Swap Spot Market',
+      isVisible: canUseProgramUpgradeInstruction && symbol === 'MNGO',
+    },
+    {
+      id: Instructions.MangoRemoveOracle,
+      name: 'Mango: Remove Oracle',
       isVisible: canUseProgramUpgradeInstruction && symbol === 'MNGO',
     },
     {
