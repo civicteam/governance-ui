@@ -4,29 +4,32 @@ import {
   ProgramAccount,
   Realm,
 } from '@solana/spl-governance'
-import { GatewayClient } from '@solana/governance-program-library'
 import { getRegistrarPDA, getVoterWeightRecord } from '@utils/plugin/accounts'
+import { IDL, Quadratic } from '../types'
+import { Program, Provider } from '@project-serum/anchor'
 
-export const getGatekeeperNetwork = async (
-  client: GatewayClient,
-  realm: ProgramAccount<Realm>
-): Promise<PublicKey> => {
-  // Get the registrar for the realm
-  const { registrar } = await getRegistrarPDA(
-    realm.pubkey,
-    realm.account.communityMint,
-    client.program.programId
-  )
-  const registrarObject = await client.program.account.registrar.fetch(
-    registrar
-  )
+const PROGRAM_ID = new PublicKey('quadCSapU8nTdLg73KHDnmdxKnJQsh7GUbu5tZfnRRr')
 
-  // Find the gatekeeper network from the registrar
-  return registrarObject.gatekeeperNetwork
+export class QuadraticClient {
+  constructor(public program: Program<Quadratic>, public devnet?: boolean) {}
+
+  static async connect(
+    provider: Provider,
+    devnet?: boolean
+  ): Promise<QuadraticClient> {
+    // alternatively we could fetch from chain
+    // const idl = await Program.fetchIdl(PROGRAM_ID, provider);
+    const idl = IDL
+
+    return new QuadraticClient(
+      new Program<Quadratic>(idl as Quadratic, PROGRAM_ID, provider),
+      devnet
+    )
+  }
 }
 
 export const getPredecessorProgramId = async (
-  client: GatewayClient,
+  client: QuadraticClient,
   realm: ProgramAccount<Realm>
 ): Promise<PublicKey | null> => {
   // Get the registrar for the realm
@@ -44,7 +47,7 @@ export const getPredecessorProgramId = async (
 }
 
 export const getPreviousVotingWeightRecord = async (
-  client: GatewayClient,
+  client: QuadraticClient,
   realm: ProgramAccount<Realm>,
   walletPk: PublicKey
 ): Promise<PublicKey> => {
@@ -73,7 +76,7 @@ export const getPreviousVotingWeightRecord = async (
 }
 
 export const getVoteInstruction = async (
-  client: GatewayClient,
+  client: QuadraticClient,
   gatewayToken: PublicKey,
   realm: ProgramAccount<Realm>,
   walletPk: PublicKey
