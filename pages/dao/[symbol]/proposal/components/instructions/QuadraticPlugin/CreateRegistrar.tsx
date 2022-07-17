@@ -1,15 +1,15 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import * as yup from 'yup'
 import {
   Governance,
   ProgramAccount,
   serializeInstructionToBase64,
+  SYSTEM_PROGRAM_ID,
 } from '@solana/spl-governance'
 import { validateInstruction } from '@utils/instructionTools'
-import { NameValue, UiInstruction } from '@utils/uiTypes/proposalCreationTypes'
+import { UiInstruction } from '@utils/uiTypes/proposalCreationTypes'
 
 import useWalletStore from 'stores/useWalletStore'
-
 import useRealm from '@hooks/useRealm'
 import useVotePluginsClientStore from 'stores/useVotePluginsClientStore'
 import { NewProposalContext } from '../../../new'
@@ -17,39 +17,35 @@ import InstructionForm, {
   InstructionInput,
   InstructionInputType,
 } from '../FormCreator'
-import { PublicKey } from '@solana/web3.js'
-import useGovernanceAssets from '@hooks/useGovernanceAssets'
-import { getRegistrarPDA } from '@utils/plugin/accounts'
 import { AssetAccount } from '@utils/uiTypes/assets'
-import Tooltip from '@components/Tooltip'
+import useGovernanceAssets from '@hooks/useGovernanceAssets'
+import { PublicKey } from '@solana/web3.js'
 import { InformationCircleIcon } from '@heroicons/react/outline'
+import Tooltip from '@components/Tooltip'
+import { getRegistrarPDA } from '@utils/plugin/accounts'
 
-interface ConfigureGatewayForm {
+interface CreateQuadraticRegistrarForm {
   governedAccount: AssetAccount | undefined
-  gatekeeperNetwork: NameValue // populated by dropdown
-  otherGatekeeperNetwork: string | undefined // manual entry
-  predecessor: PublicKey | undefined // if part of a chain of plugins
+  predecessor: string | undefined // if part of a chain of plugins
 }
 
-const ConfigureGatewayPlugin = ({
+const CreateQuadraticPluginRegistrar = ({
   index,
   governance,
 }: {
   index: number
   governance: ProgramAccount<Governance> | null
 }) => {
-  const { realm } = useRealm()
-  const gatewayClient = useVotePluginsClientStore((s) => s.state.gatewayClient)
+  const { realm, realmInfo } = useRealm()
+  const quadraticClient = useVotePluginsClientStore(
+    (s) => s.state.quadraticClient
+  )
   const { assetAccounts } = useGovernanceAssets()
   const wallet = useWalletStore((s) => s.current)
   const shouldBeGoverned = index !== 0 && governance
-  const [form, setForm] = useState<ConfigureGatewayForm>()
+  const [form, setForm] = useState<CreateQuadraticRegistrarForm>()
   const [formErrors, setFormErrors] = useState({})
   const { handleSetInstructions } = useContext(NewProposalContext)
-
-  const chosenGatekeeperNetwork: string | undefined = useMemo(() => {
-    return form?.otherGatekeeperNetwork || form?.gatekeeperNetwork?.value
-  }, [form])
 
   async function getInstruction(): Promise<UiInstruction> {
     const isValid = await validateInstruction({ schema, form, setFormErrors })
@@ -57,10 +53,14 @@ const ConfigureGatewayPlugin = ({
     if (
       isValid &&
       form!.governedAccount?.governance?.account &&
-      chosenGatekeeperNetwork &&
       wallet?.publicKey
     ) {
-      const usePreviousPlugin = !!form!.predecessor
+      const { registrar } = await getRegistrarPDA(
+        realm!.pubkey,
+        realm!.account.communityMint,
+        quadraticClient!.program.programId
+      )
+
       const remainingAccounts = form!.predecessor
         ? [
             {
@@ -70,27 +70,27 @@ const ConfigureGatewayPlugin = ({
             },
           ]
         : []
-      const { registrar } = await getRegistrarPDA(
-        realm!.pubkey,
-        realm!.account.communityMint,
-        gatewayClient!.program.programId
-      )
-      const configureRegistrarTx = await gatewayClient!.program.methods
-        .configureRegistrar(usePreviousPlugin)
+
+      const createRegistrarIx = await quadraticClient!.program.methods
+        .createRegistrar(false)
         .accounts({
           registrar,
           realm: realm!.pubkey,
+          governanceProgramId: realmInfo!.programId,
           realmAuthority: realm!.account.authority!,
-          gatekeeperNetwork: new PublicKey(chosenGatekeeperNetwork),
+          governingTokenMint: realm!.account.communityMint!,
+          payer: wallet.publicKey!,
+          systemProgram: SYSTEM_PROGRAM_ID,
         })
         .remainingAccounts(remainingAccounts)
         .instruction()
-      serializedInstruction = serializeInstructionToBase64(configureRegistrarTx)
+      serializedInstruction = serializeInstructionToBase64(createRegistrarIx)
     }
     return {
       serializedInstruction: serializedInstruction,
       isValid,
       governance: form!.governedAccount?.governance,
+      chunkSplitByDefault: true,
     }
   }
   useEffect(() => {
@@ -120,50 +120,6 @@ const ConfigureGatewayPlugin = ({
       ),
     },
     {
-      label: 'Civic Pass',
-      initialValue: null,
-      inputType: 'text',
-      name: 'gatekeeperNetwork',
-      type: InstructionInputType.SELECT,
-      additionalComponent: (
-        <Tooltip content="The type of Civic Pass to add to the DAO. Visit civic.com for details">
-          <span>
-            <InformationCircleIcon className="w-4 h-4 ml-1"></InformationCircleIcon>
-          </span>
-        </Tooltip>
-      ),
-      options: [
-        {
-          name: 'Bot Resistance',
-          value: 'ignREusXmGrscGNUesoU9mxfds9AiYTezUKex2PsZV6',
-        },
-        {
-          name: 'Uniqueness',
-          value: 'uniqobk8oGh4XBLMqM68K8M2zNu3CdYX7q5go7whQiv',
-        },
-        {
-          name: 'ID Verification',
-          value: 'bni1ewus6aMxTxBi5SAfzEmmXLf8KcVFRmTfproJuKw',
-        },
-        {
-          name: 'ID Verification for DeFi',
-          value: 'gatbGF9DvLAw3kWyn1EmH5Nh1Sqp8sTukF7yaQpSc71',
-        },
-        {
-          name: 'Other',
-          value: '',
-        },
-      ],
-    },
-    {
-      label: 'Other Pass',
-      initialValue: null,
-      inputType: 'text',
-      name: 'otherGatekeeperNetwork',
-      type: InstructionInputType.INPUT,
-      hide: () => form?.gatekeeperNetwork?.value.toString() !== '', // Other selected
-    },
-    {
       label: 'Predecessor plugin (optional)',
       initialValue: '',
       inputType: 'text',
@@ -178,6 +134,7 @@ const ConfigureGatewayPlugin = ({
       ),
     },
   ]
+
   return (
     <>
       <InstructionForm
@@ -191,4 +148,4 @@ const ConfigureGatewayPlugin = ({
   )
 }
 
-export default ConfigureGatewayPlugin
+export default CreateQuadraticPluginRegistrar

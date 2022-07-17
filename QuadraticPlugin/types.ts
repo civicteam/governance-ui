@@ -119,11 +119,6 @@ export type Quadratic = {
           isSigner: false
         },
         {
-          name: 'quadraticToken'
-          isMut: false
-          isSigner: false
-        },
-        {
           name: 'voterWeightRecord'
           isMut: true
           isSigner: false
@@ -160,6 +155,56 @@ export type Quadratic = {
             name: 'reserved'
             type: {
               array: ['u8', 128]
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: 'voterWeightRecord'
+      type: {
+        kind: 'struct'
+        fields: [
+          {
+            name: 'realm'
+            type: 'publicKey'
+          },
+          {
+            name: 'governingTokenMint'
+            type: 'publicKey'
+          },
+          {
+            name: 'governingTokenOwner'
+            type: 'publicKey'
+          },
+          {
+            name: 'voterWeight'
+            type: 'u64'
+          },
+          {
+            name: 'voterWeightExpiry'
+            type: {
+              option: 'u64'
+            }
+          },
+          {
+            name: 'weightAction'
+            type: {
+              option: {
+                defined: 'VoterWeightAction'
+              }
+            }
+          },
+          {
+            name: 'weightActionTarget'
+            type: {
+              option: 'publicKey'
+            }
+          },
+          {
+            name: 'reserved'
+            type: {
+              array: ['u8', 8]
             }
           }
         ]
@@ -214,11 +259,6 @@ export type Quadratic = {
     },
     {
       code: 6009
-      name: 'InvalidquadraticToken'
-      msg: 'Invalid quadratic token'
-    },
-    {
-      code: 6010
       name: 'MissingPreviousVoterWeightPlugin'
       msg: 'Previous voter weight plugin required but not provided'
     }
@@ -346,11 +386,6 @@ export const IDL: Quadratic = {
           isSigner: false,
         },
         {
-          name: 'quadraticToken',
-          isMut: false,
-          isSigner: false,
-        },
-        {
           name: 'voterWeightRecord',
           isMut: true,
           isSigner: false,
@@ -387,6 +422,56 @@ export const IDL: Quadratic = {
             name: 'reserved',
             type: {
               array: ['u8', 128],
+            },
+          },
+        ],
+      },
+    },
+    {
+      name: 'voterWeightRecord',
+      type: {
+        kind: 'struct',
+        fields: [
+          {
+            name: 'realm',
+            type: 'publicKey',
+          },
+          {
+            name: 'governingTokenMint',
+            type: 'publicKey',
+          },
+          {
+            name: 'governingTokenOwner',
+            type: 'publicKey',
+          },
+          {
+            name: 'voterWeight',
+            type: 'u64',
+          },
+          {
+            name: 'voterWeightExpiry',
+            type: {
+              option: 'u64',
+            },
+          },
+          {
+            name: 'weightAction',
+            type: {
+              option: {
+                defined: 'VoterWeightAction',
+              },
+            },
+          },
+          {
+            name: 'weightActionTarget',
+            type: {
+              option: 'publicKey',
+            },
+          },
+          {
+            name: 'reserved',
+            type: {
+              array: ['u8', 8],
             },
           },
         ],
@@ -445,11 +530,6 @@ export const IDL: Quadratic = {
     },
     {
       code: 6009,
-      name: 'InvalidquadraticToken',
-      msg: 'Invalid quadratic token',
-    },
-    {
-      code: 6010,
       name: 'MissingPreviousVoterWeightPlugin',
       msg: 'Previous voter weight plugin required but not provided',
     },

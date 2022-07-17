@@ -58,9 +58,11 @@ export function useVotingPlugins() {
     handleSetVsrClient,
     handleSetNftClient,
     handleSetGatewayClient,
+    handleSetQuadraticClient,
     handleSetSwitchboardClient,
     handleSetNftRegistrar,
     handleSetGatewayRegistrar,
+    handleSetQuadraticRegistrar,
     handleSetPythClient,
     handleSetCurrentRealmVotingClient,
   } = useVotePluginsClientStore()
@@ -86,6 +88,9 @@ export function useVotingPlugins() {
   const vsrClient = useVotePluginsClientStore((s) => s.state.vsrClient)
   const nftClient = useVotePluginsClientStore((s) => s.state.nftClient)
   const gatewayClient = useVotePluginsClientStore((s) => s.state.gatewayClient)
+  const quadraticClient = useVotePluginsClientStore(
+    (s) => s.state.quadraticClient
+  )
   const switchboardClient = useVotePluginsClientStore(
     (s) => s.state.switchboardClient
   )
@@ -331,6 +336,7 @@ export function useVotingPlugins() {
       handleSetNftClient(wallet, connection)
       handleSetSwitchboardClient(wallet, connection)
       handleSetGatewayClient(wallet, connection)
+      handleSetQuadraticClient(wallet, connection)
       handleSetPythClient(wallet, connection)
     }
   }, [connection.endpoint, wallet])
@@ -372,21 +378,24 @@ export function useVotingPlugins() {
     }
 
     // If the current realm uses Civic Pass
-    // register the gatekeeper network (the "type" of Civic)
+    // register the gatekeeper network (the "type" of pass)
     // in the Civic GatewayProvider.
     // This updates the UI to show if the user has a gateway token
     const handleGatewayPlugin = () => {
       if (
         gatewayClient &&
+        quadraticClient &&
         currentPluginPk &&
         gatewayPluginsPks.includes(currentPluginPk.toBase58())
       ) {
         handleSetGatewayRegistrar(gatewayClient!, realm)
+        handleSetQuadraticRegistrar(quadraticClient!, realm)
         if (connected) {
           handleSetCurrentRealmVotingClient({
             client: gatewayClient,
             realm,
             walletPk: wallet?.publicKey,
+            predecessorClient: quadraticClient, // TODO clean this up - will only be used if the predecessor is set
           })
         }
 

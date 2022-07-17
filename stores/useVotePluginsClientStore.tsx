@@ -16,18 +16,22 @@ import { VotingClient, VotingClientProps } from '@utils/uiTypes/VotePlugin'
 import { PythClient } from 'pyth-staking-api'
 import { PublicKey } from '@solana/web3.js'
 import { tryGetGatewayRegistrar } from '../GatewayPlugin/sdk/api'
+import { QuadraticClient } from '../QuadraticPlugin/sdk/accounts'
+import { tryGetQuadraticRegistrar } from '../QuadraticPlugin/sdk/api'
 
 interface UseVotePluginsClientStore extends State {
   state: {
-    //diffrent plugins to choose because we will still have functions related only to one plugin
+    //different plugins to choose because we will still have functions related only to one plugin
     vsrClient: VsrClient | undefined
     nftClient: NftVoterClient | undefined
     gatewayClient: GatewayClient | undefined
+    quadraticClient: QuadraticClient | undefined
     switchboardClient: SwitchboardQueueVoterClient | undefined
     pythClient: PythClient | undefined
     voteStakeRegistryRegistrar: Registrar | null
     nftMintRegistrar: any
     gatewayRegistrar: any
+    quadraticRegistrar: any
     currentRealmVotingClient: VotingClient
     voteStakeRegistryRegistrarPk: PublicKey | null
   }
@@ -47,6 +51,10 @@ interface UseVotePluginsClientStore extends State {
     wallet: SignerWalletAdapter | undefined,
     connection: ConnectionContext
   ) => void
+  handleSetQuadraticClient: (
+    wallet: SignerWalletAdapter | undefined,
+    connection: ConnectionContext
+  ) => void
   handleSetPythClient: (
     wallet: SignerWalletAdapter | undefined,
     connection: ConnectionContext
@@ -63,10 +71,15 @@ interface UseVotePluginsClientStore extends State {
     client: GatewayClient,
     realm: ProgramAccount<Realm> | undefined
   ) => void
+  handleSetQuadraticRegistrar: (
+    client: QuadraticClient,
+    realm: ProgramAccount<Realm> | undefined
+  ) => void
   handleSetCurrentRealmVotingClient: ({
     client,
     realm,
     walletPk,
+    predecessorClient,
   }: VotingClientProps) => void
 }
 
@@ -74,12 +87,14 @@ const defaultState = {
   vsrClient: undefined,
   nftClient: undefined,
   gatewayClient: undefined,
+  quadraticClient: undefined,
   switchboardClient: undefined,
   pythClient: undefined,
   voteStakeRegistryRegistrar: null,
   voteStakeRegistryRegistrarPk: null,
   nftMintRegistrar: null,
   gatewayRegistrar: null,
+  quadraticRegistrar: null,
   currentRealmVotingClient: new VotingClient({
     client: undefined,
     realm: undefined,
@@ -160,6 +175,21 @@ const useVotePluginsClientStore = create<UseVotePluginsClientStore>(
         s.state.gatewayRegistrar = existingRegistrar
       })
     },
+    handleSetQuadraticRegistrar: async (client, realm) => {
+      const clientProgramId = client!.program.programId
+      const { registrar } = await getPluginRegistrarPDA(
+        realm!.pubkey,
+        realm!.account.communityMint,
+        clientProgramId
+      )
+      const existingRegistrar = await tryGetQuadraticRegistrar(
+        registrar,
+        client!
+      )
+      set((s) => {
+        s.state.quadraticRegistrar = existingRegistrar
+      })
+    },
     handleSetSwitchboardClient: async (wallet, connection) => {
       const options = AnchorProvider.defaultOptions()
       const provider = new AnchorProvider(
@@ -199,12 +229,18 @@ const useVotePluginsClientStore = create<UseVotePluginsClientStore>(
         }
       }
     },
-    handleSetCurrentRealmVotingClient: ({ client, realm, walletPk }) => {
+    handleSetCurrentRealmVotingClient: ({
+      client,
+      realm,
+      walletPk,
+      predecessorClient,
+    }) => {
       set((s) => {
         s.state.currentRealmVotingClient = new VotingClient({
           client,
           realm,
           walletPk,
+          predecessorClient,
         })
       })
     },
@@ -221,6 +257,21 @@ const useVotePluginsClientStore = create<UseVotePluginsClientStore>(
       )
       set((s) => {
         s.state.gatewayClient = gatewayClient
+      })
+    },
+    handleSetQuadraticClient: async (wallet, connection) => {
+      const options = AnchorProvider.defaultOptions()
+      const provider = new AnchorProvider(
+        connection.current,
+        (wallet as unknown) as Wallet,
+        options
+      )
+      const quadraticClient = await QuadraticClient.connect(
+        provider,
+        connection.cluster === 'devnet'
+      )
+      set((s) => {
+        s.state.quadraticClient = quadraticClient
       })
     },
   })

@@ -414,6 +414,7 @@ export enum Instructions {
   CreateGatewayPluginRegistrar,
   ConfigureGatewayPlugin,
   ChangeMakeDonation,
+  CreateQuadraticVotingPluginRegistrar,
 }
 
 export type createParams = [
