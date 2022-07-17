@@ -8,7 +8,9 @@ import {
 import { IDL, Quadratic } from '../types'
 import { Program, Provider } from '@project-serum/anchor'
 
-const PROGRAM_ID = new PublicKey('quadCSapU8nTdLg73KHDnmdxKnJQsh7GUbu5tZfnRRr')
+export const QUADRATIC_PLUGIN_PROGRAM_ID = new PublicKey(
+  'quadCSapU8nTdLg73KHDnmdxKnJQsh7GUbu5tZfnRRr'
+)
 
 export class QuadraticClient {
   constructor(public program: Program<Quadratic>, public devnet?: boolean) {}
@@ -22,7 +24,11 @@ export class QuadraticClient {
     const idl = IDL
 
     return new QuadraticClient(
-      new Program<Quadratic>(idl as Quadratic, PROGRAM_ID, provider),
+      new Program<Quadratic>(
+        idl as Quadratic,
+        QUADRATIC_PLUGIN_PROGRAM_ID,
+        provider
+      ),
       devnet
     )
   }

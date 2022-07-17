@@ -90,6 +90,7 @@ import MakeRemoveSpotMarket from './components/instructions/Mango/MakeRemoveSpot
 import MakeRemovePerpMarket from './components/instructions/Mango/MakeRemovePerpMarket'
 import MakeSwapSpotMarket from './components/instructions/Mango/MakeSwapSpotMarket'
 import MakeRemoveOracle from './components/instructions/Mango/MakeRemoveOracle'
+import CreateQuadraticPluginRegistrar from './components/instructions/QuadraticPlugin/CreateRegistrar'
 
 const TITLE_LENGTH_LIMIT = 130
 
@@ -586,6 +587,13 @@ const New = () => {
             index={idx}
             governance={governance}
           ></CreateVsrRegistrar>
+        )
+      case Instructions.CreateQuadraticVotingPluginRegistrar:
+        return (
+          <CreateQuadraticPluginRegistrar
+            index={idx}
+            governance={governance}
+          ></CreateQuadraticPluginRegistrar>
         )
       default:
         null

@@ -411,6 +411,11 @@ export default function useGovernanceAssets() {
       name: 'Solend: Withdraw Funds',
       isVisible: canUseAnyInstruction,
     },
+    {
+      id: Instructions.CreateQuadraticVotingPluginRegistrar,
+      name: 'Create Quadratic vote plugin registrar',
+      isVisible: canUseAuthorityInstruction,
+    },
     ...foresightInstructions,
   ]
 
