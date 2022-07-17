@@ -1,10 +1,10 @@
 import { PublicKey } from '@solana/web3.js'
+import { ProgramAccount, Realm } from '@solana/spl-governance'
 import {
-  getTokenOwnerRecordAddress,
-  ProgramAccount,
-  Realm,
-} from '@solana/spl-governance'
-import { getRegistrarPDA, getVoterWeightRecord } from '@utils/plugin/accounts'
+  getPreviousVotingWeightRecord,
+  getRegistrarPDA,
+  getVoterWeightRecord,
+} from '@utils/plugin/accounts'
 import { IDL, Quadratic } from '../types'
 import { Program, Provider } from '@project-serum/anchor'
 
@@ -28,62 +28,11 @@ export class QuadraticClient {
   }
 }
 
-export const getPredecessorProgramId = async (
-  client: QuadraticClient,
-  realm: ProgramAccount<Realm>
-): Promise<PublicKey | null> => {
-  // Get the registrar for the realm
-  const { registrar } = await getRegistrarPDA(
-    realm.pubkey,
-    realm.account.communityMint,
-    client.program.programId
-  )
-  const registrarObject = await client.program.account.registrar.fetch(
-    registrar
-  )
-
-  // Find the gatekeeper network from the registrar
-  return registrarObject.previousVoterWeightPluginProgramId
-}
-
-export const getPreviousVotingWeightRecord = async (
-  client: QuadraticClient,
-  realm: ProgramAccount<Realm>,
-  walletPk: PublicKey
-): Promise<PublicKey> => {
-  // TODO cache this to avoid lookup every time someone votes
-  const predecessorProgramId = await getPredecessorProgramId(client, realm)
-
-  if (predecessorProgramId) {
-    // this gateway plugin registrar has a predecessor plugin - get its voting weight record
-    const { voterWeightPk } = await getVoterWeightRecord(
-      realm.pubkey,
-      realm.account.communityMint,
-      walletPk,
-      predecessorProgramId
-    )
-    return voterWeightPk
-  }
-
-  // this gateway plugin registrar has no predecessor plugin.
-  // The previous voting weight record is the token owner record
-  return getTokenOwnerRecordAddress(
-    realm.owner,
-    realm.pubkey,
-    realm.account.communityMint,
-    walletPk
-  )
-}
-
 export const getVoteInstruction = async (
   client: QuadraticClient,
-  gatewayToken: PublicKey,
   realm: ProgramAccount<Realm>,
   walletPk: PublicKey
 ) => {
-  // Throw if the user has no gateway token (TODO handle this later)
-  if (!gatewayToken) throw new Error(`Unable to vote: No Gateway Token found`)
-
   // get the user's voter weight account address
   const { voterWeightPk } = await getVoterWeightRecord(
     realm.pubkey,
@@ -114,7 +63,6 @@ export const getVoteInstruction = async (
       registrar,
       voterWeightRecord: voterWeightPk,
       inputVoterWeight,
-      gatewayToken,
     })
     .instruction()
 }

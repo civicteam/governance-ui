@@ -4,9 +4,7 @@ import {
   ProgramAccount,
   Realm,
 } from '@solana/spl-governance'
-import { QuadraticClient } from '../../QuadraticPlugin/sdk/accounts'
-import { AccountNamespace } from '@project-serum/anchor'
-import { Idl } from '@project-serum/anchor/src/idl'
+import { AccountClient, AccountNamespace, Idl } from '@project-serum/anchor'
 
 export const getRegistrarPDA = async (
   realmPk: PublicKey,
@@ -70,12 +68,46 @@ export const getVoterWeightRecord = async (
   }
 }
 
-export type PluginClient<IDL extends Idl = Idl> = {
-  program: { programId: PublicKey; account: AccountNamespace<IDL> }
+export type MinimalPluginIdl = Idl & {
+  accounts: [
+    {
+      name: 'registrar'
+      type: {
+        kind: 'struct'
+        fields: [
+          {
+            name: 'governanceProgramId'
+            type: 'publicKey'
+          },
+          {
+            name: 'realm'
+            type: 'publicKey'
+          },
+          {
+            name: 'governingTokenMint'
+            type: 'publicKey'
+          },
+          {
+            name: 'previousVoterWeightPluginProgramId'
+            type: {
+              option: 'publicKey'
+            }
+          }
+        ]
+      }
+    }
+  ]
 }
 
-export const getPredecessorProgramId = async <IDL extends Idl = Idl>(
-  client: PluginClient<IDL>,
+export type PluginClient<IDL extends MinimalPluginIdl = MinimalPluginIdl> = {
+  program: {
+    programId: PublicKey
+    account: AccountNamespace<IDL> & { registrar: AccountClient<IDL> }
+  }
+}
+
+export const getPredecessorProgramId = async (
+  client: PluginClient,
   realm: ProgramAccount<Realm>
 ): Promise<PublicKey | null> => {
   // Get the registrar for the realm
@@ -89,7 +121,7 @@ export const getPredecessorProgramId = async <IDL extends Idl = Idl>(
   )
 
   // Find the gatekeeper network from the registrar
-  return registrarObject.previousVoterWeightPluginProgramId
+  return registrarObject.previousVoterWeightPluginProgramId as PublicKey | null
 }
 
 export const getPreviousVotingWeightRecord = async (
