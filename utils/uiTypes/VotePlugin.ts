@@ -15,7 +15,7 @@ import {
   Proposal,
   TokenOwnerRecord,
 } from '@solana/spl-governance'
-import { PublicKey, TransactionInstruction } from '@solana/web3.js'
+import { Connection, PublicKey, TransactionInstruction } from '@solana/web3.js'
 import { chunks } from '@utils/helpers'
 import { PythClient } from 'pyth-staking-api'
 import {
@@ -24,14 +24,19 @@ import {
   getVoterWeightPDA,
 } from 'VoteStakeRegistry/sdk/accounts'
 import { NFTWithMint } from './nfts'
+import { getVoteInstruction } from '../../GatewayPlugin/sdk/accounts'
 import {
-  getPreviousVotingWeightRecord,
-  getVoteInstruction,
-} from '../../GatewayPlugin/sdk/accounts'
+  getVoteInstruction as getVoteInstructionForQuadraticPlugin,
+  QUADRATIC_PLUGIN_PROGRAM_ID,
+  QuadraticClient,
+} from '../../QuadraticPlugin/sdk/accounts'
 import {
   getVoterWeightRecord as getPluginVoterWeightRecord,
   getRegistrarPDA as getPluginRegistrarPDA,
   getMaxVoterWeightRecord as getPluginMaxVoterWeightRecord,
+  getPreviousVotingWeightRecord,
+  PluginClient,
+  getPredecessorProgramId,
 } from '@utils/plugin/accounts'
 
 type UpdateVoterWeightRecordTypes =
@@ -42,13 +47,8 @@ type UpdateVoterWeightRecordTypes =
   | 'signOffProposal'
 
 export interface VotingClientProps {
-  client:
-    | VsrClient
-    | NftVoterClient
-    | SwitchboardQueueVoterClient
-    | PythClient
-    | GatewayClient
-    | undefined
+  client: Client | undefined
+  predecessorClient?: Client
   realm: ProgramAccount<Realm> | undefined
   walletPk: PublicKey | null | undefined
 }
@@ -64,6 +64,7 @@ enum VotingClientType {
   SwitchboardVoterClient,
   PythClient,
   GatewayClient,
+  QuadraticClient,
 }
 
 class AccountData {
@@ -86,15 +87,18 @@ interface ProgramAddresses {
   maxVoterWeightRecord: PublicKey | undefined
 }
 
+export type Client =
+  | VsrClient
+  | NftVoterClient
+  | SwitchboardQueueVoterClient
+  | PythClient
+  | GatewayClient
+  | QuadraticClient
+
 //Abstract for common functions that plugins will implement
 export class VotingClient {
-  client:
-    | VsrClient
-    | NftVoterClient
-    | SwitchboardQueueVoterClient
-    | PythClient
-    | GatewayClient
-    | undefined
+  client: Client | undefined
+  predecessorClient: Client | undefined
   realm: ProgramAccount<Realm> | undefined
   walletPk: PublicKey | null | undefined
   votingNfts: NFTWithMeta[]
@@ -103,7 +107,12 @@ export class VotingClient {
   instructions: TransactionInstruction[]
   clientType: VotingClientType
   noClient: boolean
-  constructor({ client, realm, walletPk }: VotingClientProps) {
+  constructor({
+    client,
+    realm,
+    walletPk,
+    predecessorClient,
+  }: VotingClientProps) {
     this.client = client
     this.realm = realm
     this.walletPk = walletPk
@@ -111,6 +120,7 @@ export class VotingClient {
     this.oracles = []
     this.instructions = []
     this.noClient = true
+    this.predecessorClient = predecessorClient
     this.clientType = VotingClientType.NoClient
     if (this.client instanceof VsrClient) {
       this.clientType = VotingClientType.VsrClient
@@ -128,8 +138,8 @@ export class VotingClient {
       this.clientType = VotingClientType.GatewayClient
       this.noClient = false
     }
-    if (this.client instanceof GatewayClient) {
-      this.clientType = VotingClientType.GatewayClient
+    if (this.client instanceof QuadraticClient) {
+      this.clientType = VotingClientType.QuadraticClient
       this.noClient = false
     }
     if (this.client instanceof PythClient) {
@@ -214,6 +224,7 @@ export class VotingClient {
       instructions.push(updateVoterWeightRecordIx)
       return { voterWeightPk, maxVoterWeightRecord }
     }
+
     if (this.client instanceof GatewayClient) {
       const { voterWeightPk } = await this._withHandleGatewayVoterWeight(
         realm,
@@ -231,6 +242,32 @@ export class VotingClient {
         realm,
         walletPk
       )
+
+      // TODO for HackerHouse only - Should be generalised into an array of VoteClients
+      // Or potentially we use a recursive pattern here?
+      const predecessor = await getPredecessorProgramId(
+        (this.client as unknown) as PluginClient,
+        realm
+      )
+
+      console.log(`Predecessor: ${predecessor}`)
+      console.log(`Predecessor Client: ${this.predecessorClient}`)
+      console.log(predecessor?.equals(QUADRATIC_PLUGIN_PROGRAM_ID))
+
+      if (
+        predecessor &&
+        this.predecessorClient &&
+        predecessor.equals(QUADRATIC_PLUGIN_PROGRAM_ID)
+      ) {
+        // the quadratic plugin is configured - execute its vote instruction
+        const predecessorUpdateVoterWeightRecord = await getVoteInstructionForQuadraticPlugin(
+          this.predecessorClient as QuadraticClient,
+          realm,
+          walletPk
+        )
+        instructions.push(predecessorUpdateVoterWeightRecord)
+      }
+
       instructions.push(updateVoterWeightRecordIx)
       return { voterWeightPk, maxVoterWeightRecord: undefined }
     }
@@ -403,6 +440,32 @@ export class VotingClient {
         walletPk
       )
 
+      // TODO for HackerHouse only - Should be generalised into an array of VoteClients
+      // Or potentially we use a recursive pattern here?
+      const predecessor = await getPredecessorProgramId(
+        (this.client as unknown) as PluginClient,
+        realm
+      )
+
+      console.log('withCastPluginVote')
+      console.log(`Predecessor: ${predecessor}`)
+      console.log(`Predecessor Client: ${this.predecessorClient}`)
+      console.log(predecessor?.equals(QUADRATIC_PLUGIN_PROGRAM_ID))
+
+      if (
+        predecessor &&
+        this.predecessorClient &&
+        predecessor.equals(QUADRATIC_PLUGIN_PROGRAM_ID)
+      ) {
+        // the quadratic plugin is configured - execute its vote instruction
+        const predecessorUpdateVoterWeightRecord = await getVoteInstructionForQuadraticPlugin(
+          this.predecessorClient as QuadraticClient,
+          realm,
+          walletPk
+        )
+        instructions.push(predecessorUpdateVoterWeightRecord)
+      }
+
       instructions.push(instruction)
 
       const { voterWeightPk } = await this._withHandleGatewayVoterWeight(
@@ -567,7 +630,7 @@ export class VotingClient {
     )
 
     const previousVoterWeightPk = await getPreviousVotingWeightRecord(
-      this.client,
+      (this.client as unknown) as PluginClient,
       realm,
       walletPk
     )
@@ -589,5 +652,26 @@ export class VotingClient {
   }
   _setInstructions = (instructions: TransactionInstruction[]) => {
     this.instructions = instructions
+  }
+
+  hasVoteWeightRecord = async (client = this.client): Promise<boolean> => {
+    if (!client || !this.realm || !this.walletPk) return false
+    const { voterWeightPk } = await getPluginVoterWeightRecord(
+      this.realm.pubkey,
+      this.realm.account.communityMint,
+      this.walletPk,
+      client.program.programId
+    )
+
+    // TODO create interface for clients
+    let connection: Connection
+    if (!(client instanceof PythClient)) {
+      connection = client.program.provider.connection
+    } else {
+      connection = client.stakeConnection.provider.connection
+    }
+
+    const account = await connection.getAccountInfo(voterWeightPk)
+    return !!account
   }
 }

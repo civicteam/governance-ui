@@ -1,47 +1,44 @@
 import { PublicKey } from '@solana/web3.js'
 import { ProgramAccount, Realm } from '@solana/spl-governance'
-import { GatewayClient } from '@solana/governance-program-library'
 import {
   getPreviousVotingWeightRecord,
   getRegistrarPDA,
   getVoterWeightRecord,
-  PluginClient,
 } from '@utils/plugin/accounts'
-import { notify } from '@utils/notifications'
+import { IDL, Quadratic } from '../types'
+import { Program, Provider } from '@project-serum/anchor'
 
-export const getGatekeeperNetwork = async (
-  client: GatewayClient,
-  realm: ProgramAccount<Realm>
-): Promise<PublicKey> => {
-  // Get the registrar for the realm
-  const { registrar } = await getRegistrarPDA(
-    realm.pubkey,
-    realm.account.communityMint,
-    client.program.programId
-  )
-  const registrarObject = await client.program.account.registrar.fetch(
-    registrar
-  )
+export const QUADRATIC_PLUGIN_PROGRAM_ID = new PublicKey(
+  'quadCSapU8nTdLg73KHDnmdxKnJQsh7GUbu5tZfnRRr'
+)
 
-  // Find the gatekeeper network from the registrar
-  return registrarObject.gatekeeperNetwork
+export class QuadraticClient {
+  constructor(public program: Program<Quadratic>, public devnet?: boolean) {}
+
+  static async connect(
+    provider: Provider,
+    devnet?: boolean
+  ): Promise<QuadraticClient> {
+    // alternatively we could fetch from chain
+    // const idl = await Program.fetchIdl(PROGRAM_ID, provider);
+    const idl = IDL
+
+    return new QuadraticClient(
+      new Program<Quadratic>(
+        idl as Quadratic,
+        QUADRATIC_PLUGIN_PROGRAM_ID,
+        provider
+      ),
+      devnet
+    )
+  }
 }
 
 export const getVoteInstruction = async (
-  client: GatewayClient,
-  gatewayToken: PublicKey,
+  client: QuadraticClient,
   realm: ProgramAccount<Realm>,
   walletPk: PublicKey
 ) => {
-  // Throw if the user has no gateway token
-  if (!gatewayToken) {
-    const error = new Error(
-      `Unable to execute transaction: No Civic Pass found`
-    )
-    notify({ type: 'error', message: `${error}` })
-    throw error
-  }
-
   // get the user's voter weight account address
   const { voterWeightPk } = await getVoterWeightRecord(
     realm.pubkey,
@@ -60,10 +57,7 @@ export const getVoteInstruction = async (
   // the previous voting weight record in the chain of plugins,
   // or the token owner record if this is the first plugin in the chain
   const inputVoterWeight = await getPreviousVotingWeightRecord(
-    // TODO this clumsy cast should not be necessary
-    // The parameterisation of the common properties of the IDL used
-    // in each plugin is not working correctly at the moment.
-    (client as unknown) as PluginClient,
+    client,
     realm,
     walletPk
   )
@@ -75,7 +69,6 @@ export const getVoteInstruction = async (
       registrar,
       voterWeightRecord: voterWeightPk,
       inputVoterWeight,
-      gatewayToken,
     })
     .instruction()
 }

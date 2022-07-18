@@ -28,7 +28,7 @@ interface CreateGatewayRegistrarForm {
   governedAccount: AssetAccount | undefined
   gatekeeperNetwork: NameValue // populated by dropdown
   otherGatekeeperNetwork: NameValue | undefined // manual entry
-  predecessor: PublicKey | undefined // if part of a chain of plugins
+  predecessor: string | undefined // if part of a chain of plugins
 }
 
 const CreateGatewayPluginRegistrar = ({
@@ -68,12 +68,19 @@ const CreateGatewayPluginRegistrar = ({
         gatewayClient!.program.programId
       )
 
+      const usePreviousPlugin = !!form!.predecessor
       const remainingAccounts = form!.predecessor
-        ? [{ pubkey: form!.predecessor, isSigner: false, isWritable: false }]
+        ? [
+            {
+              pubkey: new PublicKey(form!.predecessor),
+              isSigner: false,
+              isWritable: false,
+            },
+          ]
         : []
 
       const createRegistrarIx = await gatewayClient!.program.methods
-        .createRegistrar(false)
+        .createRegistrar(usePreviousPlugin)
         .accounts({
           registrar,
           realm: realm!.pubkey,
