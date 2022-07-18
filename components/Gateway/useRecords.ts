@@ -68,7 +68,7 @@ export const useRecords = (): AvailableRecordAccounts => {
   )
 
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       // tokenOwnerRecord
       if (ownTokenRecord) {
         setTokenOwnerRecord({
