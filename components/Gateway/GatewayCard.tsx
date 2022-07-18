@@ -39,11 +39,14 @@ const GatewayCard = () => {
 
   // show the join button if any of the records required by the chain of plugins are not yet created
   const showJoinButton = useMemo(() => {
+    console.log(records)
     return (
-      !records.tokenOwnerRecord.accountExists ||
-      !records.voteWeightRecord.accountExists ||
-      (client.predecessorClient &&
-        !records.predecessorVoteWeightRecord.accountExists)
+      (!records.tokenOwnerRecord.accountExists &&
+        records.tokenOwnerRecord.accountRequired) ||
+      (!records.voteWeightRecord.accountExists &&
+        records.voteWeightRecord.accountRequired) ||
+      (!records.predecessorVoteWeightRecord.accountExists &&
+        records.predecessorVoteWeightRecord.accountRequired)
     )
   }, [records, client])
 
@@ -64,6 +67,7 @@ const GatewayCard = () => {
     // TODO temporary for demo - move this into a client and allow recursion/arbitrary chain of plugins
     if (
       client.predecessorClient &&
+      records.predecessorVoteWeightRecord.accountRequired &&
       !records.predecessorVoteWeightRecord.accountExists
     ) {
       const {
@@ -95,7 +99,10 @@ const GatewayCard = () => {
       instructions.push(createPredecessorVoterWeightRecordIx)
     }
 
-    if (!records.voteWeightRecord.accountExists) {
+    if (
+      !records.voteWeightRecord.accountExists &&
+      records.voteWeightRecord.accountRequired
+    ) {
       const createVoterWeightRecordIx = await (client.client as GatewayClient).program.methods
         .createVoterWeightRecord(wallet!.publicKey!)
         .accounts({
@@ -109,7 +116,10 @@ const GatewayCard = () => {
       instructions.push(createVoterWeightRecordIx)
     }
 
-    if (!records.tokenOwnerRecord.accountExists) {
+    if (
+      !records.tokenOwnerRecord.accountExists &&
+      records.tokenOwnerRecord.accountRequired
+    ) {
       await withCreateTokenOwnerRecord(
         instructions,
         realm!.owner!,
