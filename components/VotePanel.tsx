@@ -7,7 +7,7 @@ import { useHasVoteTimeExpired } from '../hooks/useHasVoteTimeExpired'
 import useRealm from '../hooks/useRealm'
 import { ProposalState } from '@solana/spl-governance'
 import { RpcContext } from '@solana/spl-governance'
-import { GoverningTokenType } from '@solana/spl-governance'
+import { GoverningTokenRole } from '@solana/spl-governance'
 import { BanIcon, ThumbUpIcon, ThumbDownIcon } from '@heroicons/react/solid'
 
 import useWalletStore from '../stores/useWalletStore'
@@ -20,6 +20,7 @@ import useNftPluginStore from 'NftVotePlugin/store/nftPluginStore'
 import { LOCALNET_REALM_ID as PYTH_LOCALNET_REALM_ID } from 'pyth-staking-api'
 import { isYesVote } from '@models/voteRecords'
 import Tooltip from '@components/Tooltip'
+import { VotingClientType } from '@utils/uiTypes/VotePlugin'
 
 const VotePanel = () => {
   const [showVoteModal, setShowVoteModal] = useState(false)
@@ -54,7 +55,7 @@ const VotePanel = () => {
 
   // Handle state based on if a delegated wallet has already voted or not
   const ownVoteRecord =
-    tokenType === GoverningTokenType.Community && ownTokenRecord
+    tokenType === GoverningTokenRole.Community && ownTokenRecord
       ? voteRecordsByVoter[
           ownTokenRecord.account.governingTokenOwner.toBase58()
         ]
@@ -65,7 +66,7 @@ const VotePanel = () => {
       : wallet?.publicKey && voteRecordsByVoter[wallet.publicKey.toBase58()]
 
   const voterTokenRecord =
-    tokenType === GoverningTokenType.Community
+    tokenType === GoverningTokenRole.Community
       ? ownTokenRecord
       : ownCouncilTokenRecord
 
@@ -125,6 +126,7 @@ const VotePanel = () => {
 
       await relinquishVote(
         rpcContext,
+        realm!.pubkey,
         proposal!,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         voterTokenRecord!.pubkey,
@@ -154,7 +156,7 @@ const VotePanel = () => {
   const actionLabel =
     !isVoteCast || !connected
       ? `Cast your ${
-          tokenType === GoverningTokenType.Community ? 'community' : 'council'
+          tokenType === GoverningTokenRole.Community ? 'community' : 'council'
         } vote`
       : 'Your vote'
 
@@ -170,6 +172,8 @@ const VotePanel = () => {
     ? 'You need to connect your wallet to be able to vote'
     : !isVoting && isVoteCast
     ? 'Proposal is not in a voting state anymore.'
+    : client.clientType === VotingClientType.NftVoterClient && !voterTokenRecord
+    ? 'You must join the Realm to be able to vote'
     : !voterTokenRecord ||
       !ownVoterWeight.hasMinAmountToVote(
         voterTokenRecord.account.governingTokenMint

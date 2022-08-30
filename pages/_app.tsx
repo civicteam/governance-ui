@@ -29,6 +29,7 @@ import TransactionLoader from '@components/TransactionLoader'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import { GatewayProvider } from '@components/Gateway/GatewayProvider'
+import NftVotingCountingModal from '@components/NftVotingCountingModal'
 
 const Notifications = dynamic(() => import('../components/Notification'), {
   ssr: false,
@@ -76,9 +77,9 @@ function App({ Component, pageProps }) {
   useEffect(() => {
     if (
       realm &&
-      config?.account.communityVoterWeightAddin &&
+      config?.account.communityTokenConfig.voterWeightAddin &&
       vsrPluginsPks.includes(
-        config.account.communityVoterWeightAddin.toBase58()
+        config.account.communityTokenConfig.voterWeightAddin.toBase58()
       ) &&
       realm.pubkey &&
       wallet?.connected &&
@@ -99,7 +100,7 @@ function App({ Component, pageProps }) {
     realm?.pubkey.toBase58(),
     ownTokenRecord?.pubkey.toBase58(),
     wallet?.connected,
-    client,
+    client?.program.programId.toBase58(),
   ])
 
   useEffect(() => {
@@ -108,7 +109,7 @@ function App({ Component, pageProps }) {
         JSON.stringify(possibleNftsAccounts) &&
       realm?.pubkey
     ) {
-      getNfts(possibleNftsAccounts, connection.current)
+      getNfts(possibleNftsAccounts, connection)
     }
   }, [JSON.stringify(possibleNftsAccounts), realm?.pubkey.toBase58()])
 
@@ -202,6 +203,7 @@ function App({ Component, pageProps }) {
               <NavBar />
               <Notifications />
               <TransactionLoader></TransactionLoader>
+              <NftVotingCountingModal></NftVotingCountingModal>
               <PageBodyContainer>
                 <Component {...pageProps} />
               </PageBodyContainer>

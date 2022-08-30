@@ -3,7 +3,7 @@ import GovernedAccountsTabs from '@components/GovernedAccountsTabs'
 import PreviousRouteBtn from '@components/PreviousRouteBtn'
 import useRealm from '@hooks/useRealm'
 import { fmtMintAmount } from '@tools/sdk/units'
-import { MAX_TOKENS_TO_DISABLE } from '@tools/constants'
+import { DISABLED_VOTER_WEIGHT } from '@tools/constants'
 import { capitalize } from '@utils/helpers'
 import useGovernanceAssetsStore from 'stores/useGovernanceAssetsStore'
 import Tabs from '@components/Tabs'
@@ -17,15 +17,17 @@ import { tryParsePublicKey } from '@tools/core/pubkey'
 import { getAccountName } from '@components/instructions/tools'
 import useWalletStore from 'stores/useWalletStore'
 import SetRealmAuthorityModal from './SetRealmAuthorityModal'
+import MetadataCreationModal from './MetadataCreationModal'
 
 import ParamsView from './components/ParamsView'
 import AccountsView from './components/AccountsView'
 import StatsView from './components/StatsView'
 import { ExclamationIcon } from '@heroicons/react/outline'
 import Tooltip from '@components/Tooltip'
+import { AccountType } from '@utils/uiTypes/assets'
 
 const Params = () => {
-  const { realm, mint } = useRealm()
+  const { realm, mint, config } = useRealm()
   const wallet = useWalletStore((s) => s.current)
   const {
     canUseAuthorityInstruction,
@@ -33,6 +35,27 @@ const Params = () => {
     auxiliaryTokenAccounts,
   } = useGovernanceAssets()
   const governancesArray = useGovernanceAssetsStore((s) => s.governancesArray)
+  const mintGovernancesWithMintInfo = assetAccounts.filter((x) => {
+    return x.type === AccountType.MINT
+  })
+
+  const hasAuthorityGovernances = governancesArray.filter((governance) => {
+    const filteredMintGovernances = mintGovernancesWithMintInfo.filter(
+      (mintGovernance) =>
+        mintGovernance.governance.pubkey.toString() ===
+        governance.pubkey.toString()
+    )
+
+    if (filteredMintGovernances.length == 0) {
+      return false
+    }
+
+    return (
+      filteredMintGovernances[0].governance.pubkey.toString() ===
+      governance.pubkey.toString()
+    )
+  })
+  const showCreateMetadataButton = !!hasAuthorityGovernances.length
   const loadGovernedAccounts = useGovernanceAssetsStore(
     (s) => s.loadGovernedAccounts
   )
@@ -52,6 +75,10 @@ const Params = () => {
   const [isRealmAuthorityModalOpen, setRealmAuthorityModalIsOpen] = useState(
     false
   )
+  const [
+    isMetadataCreationModalOpen,
+    setIsMetadataCreationModalOpen,
+  ] = useState(false)
   const realmAccount = realm?.account
   const communityMint = realmAccount?.communityMint.toBase58()
   const councilMintPk = realmAccount?.config.councilMint?.toBase58()
@@ -63,6 +90,12 @@ const Params = () => {
   }
   const closeRealmProposalModal = () => {
     setIsRealmProposalModalOpen(false)
+  }
+  const openMetadataCreationModal = () => {
+    setIsMetadataCreationModalOpen(true)
+  }
+  const closeMetadataCreationModal = () => {
+    setIsMetadataCreationModalOpen(false)
   }
   const openGovernanceProposalModal = () => {
     setIsGovernanceProposalModalOpen(true)
@@ -81,7 +114,7 @@ const Params = () => {
   }
   const minCommunityTokensToCreateGovernance =
     realmConfig &&
-    MAX_TOKENS_TO_DISABLE.eq(realmConfig.minCommunityTokensToCreateGovernance)
+    DISABLED_VOTER_WEIGHT.eq(realmConfig.minCommunityTokensToCreateGovernance)
       ? 'Disabled'
       : realmConfig?.minCommunityTokensToCreateGovernance &&
         fmtMintAmount(mint, realmConfig.minCommunityTokensToCreateGovernance)
@@ -112,6 +145,13 @@ const Params = () => {
           isOpen={isRealmAuthorityModalOpen}
           closeModal={closeSetRealmAuthorityModal}
         ></SetRealmAuthorityModal>
+      )}
+      {isMetadataCreationModalOpen && (
+        <MetadataCreationModal
+          governance={activeGovernance}
+          isOpen={isMetadataCreationModalOpen}
+          closeModal={closeMetadataCreationModal}
+        ></MetadataCreationModal>
       )}
       <div className="col-span-12 p-4 rounded-lg bg-bkg-2 md:p-6">
         <div className="mb-4">
@@ -169,6 +209,26 @@ const Params = () => {
                     </Button>
                   )}
                 </div>
+                <div className="flex">
+                  {showCreateMetadataButton && (
+                    <Button
+                      disabled={
+                        !canUseAuthorityInstruction || !realmAuthorityGovernance
+                      }
+                      tooltipMessage={
+                        !canUseAuthorityInstruction
+                          ? 'Please connect wallet with enough voting power to create realm config proposals'
+                          : !realmAuthorityGovernance
+                          ? 'None of the governances is realm authority'
+                          : ''
+                      }
+                      onClick={openMetadataCreationModal}
+                      className="ml-auto"
+                    >
+                      Create metadata
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="col-span-1 p-4 border rounded-md border-fgd-4">
                 <h2 className="flex items-center">Config </h2>
@@ -188,14 +248,14 @@ const Params = () => {
                   padding
                   label="Use community voter weight add-in"
                   val={getYesNoString(
-                    realmConfig?.useCommunityVoterWeightAddin
+                    config?.account.communityTokenConfig.voterWeightAddin
                   )}
                 />
                 <AddressField
                   padding
                   label="Use max community voter weight add-in"
                   val={getYesNoString(
-                    realmConfig?.useMaxCommunityVoterWeightAddin
+                    config?.account.communityTokenConfig.maxVoterWeightAddin
                   )}
                 />
                 <div className="flex">
