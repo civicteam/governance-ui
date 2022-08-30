@@ -16,9 +16,22 @@ const NotificationList = () => {
     if (notifications.length > 0) {
       const id = setInterval(() => {
         setNotificationStore((state) => {
-          state.notifications = notifications.slice(1, notifications.length)
+          const amountToRemove = Math.floor(
+            Math.max(state.notifications.length / 10, 1)
+          )
+          state.notifications = notifications.slice(
+            amountToRemove,
+            notifications.length
+          )
         })
       }, 6000)
+
+      // just nuke if it gets too big
+      if (notifications.length > 100) {
+        setNotificationStore((state) => {
+          state.notifications = []
+        })
+      }
 
       return () => {
         clearInterval(id)
