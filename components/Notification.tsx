@@ -16,6 +16,8 @@ const NotificationList = () => {
     if (notifications.length > 0) {
       const id = setInterval(() => {
         setNotificationStore((state) => {
+          // Remove notifications based on how many are displayed
+          // Remove 1/10th of the notifications each time, or 1, whichever is larger
           const amountToRemove = Math.floor(
             Math.max(state.notifications.length / 10, 1)
           )
