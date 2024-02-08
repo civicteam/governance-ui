@@ -10,17 +10,18 @@ import {
 import { loadClient } from './loadClient'
 import { AnchorProvider } from '@coral-xyz/anchor'
 import EmptyWallet from '@utils/Mango/listingTools'
+import { getRegistrarPDA as getPluginRegistrarPDA } from '@utils/plugin/accounts'
 
 export interface PluginData {
-  pluginProgramId: PublicKey
-  name: string | undefined // you may need undefined here to allow "unknown" plugins
+  programId: PublicKey
+  name: PluginName | undefined // you may need undefined here to allow "unknown" plugins
   params: any // the most challenging one- probably a typed data structure of some kind, that is related to the plugin, e.g. QV plugin has params: { coefficients: number[] }, Gateway plugin has params: { gatekeeperNetwork: Plugin } - these would come from the registrar
   voterWeight: BN // the weight after applying this plugin (taken from the voter's voterWeightRecord account)
   maxVoterWeight: BN | undefined // see above - can be undefined if the plugin does not set a max vw
 }
 
 export const getPredecessorProgramId = async (
-  client: GatewayClient | QuadraticClient,
+  client: GatewayClient | QuadraticClient, // TODO: Add other clients once we support them
   realmPublicKey: PublicKey,
   governanceMintPublicKey: PublicKey
 ): Promise<PublicKey | null> => {
@@ -41,14 +42,16 @@ export const getPredecessorProgramId = async (
 export const getPlugins = async ({
   realmPublicKey,
   governanceMintPublicKey,
+  walletPublicKey,
   connection,
 }: {
   realmPublicKey: PublicKey
   governanceMintPublicKey: PublicKey
+  walletPublicKey: PublicKey
   connection: Connection
-}): Promise<PluginName[]> => {
+}): Promise<PluginData[]> => {
   const config = await fetchRealmConfigQuery(connection, realmPublicKey)
-  const plugins: PluginName[] = []
+  const plugins: PluginData[] = []
 
   const options = AnchorProvider.defaultOptions()
   const provider = new AnchorProvider(
@@ -68,15 +71,40 @@ export const getPlugins = async ({
     do {
       pluginName = findPluginName(programId)
       if (pluginName) {
-        plugins.push(pluginName as PluginName)
-      }
+        const client = await loadClient(pluginName as PluginName, provider)
 
-      const client = await loadClient(pluginName as PluginName, provider)
-      programId = await getPredecessorProgramId(
-        client,
-        realmPublicKey,
-        governanceMintPublicKey
-      )
+        const voterWeight = await client.getVoterWeightRecord(
+          realmPublicKey,
+          governanceMintPublicKey,
+          walletPublicKey
+        )
+
+        const { registrar } = await getPluginRegistrarPDA(
+          realmPublicKey,
+          governanceMintPublicKey,
+          programId
+        )
+
+        const registrarData = await client.program.account.registrar.fetch(
+          registrar
+        )
+
+        plugins.push({
+          programId: programId,
+          name: pluginName as PluginName,
+          voterWeight: voterWeight?.voterWeight,
+          maxVoterWeight: undefined, // TODO, fetch this for other clients
+          params: {
+            ...registrarData,
+          },
+        })
+
+        programId = await getPredecessorProgramId(
+          client,
+          realmPublicKey,
+          governanceMintPublicKey
+        )
+      }
     } while (pluginName !== null && programId !== null)
   }
 

@@ -2,10 +2,8 @@ import { PublicKey, TransactionInstruction } from '@solana/web3.js'
 import queryClient from '@hooks/queries/queryClient'
 import { useConnection } from '@solana/wallet-adapter-react'
 import { updateVoterWeightRecord } from './updateVoterWeightRecord'
-import { getPlugins } from './getPlugins'
+import { PluginData, getPlugins } from './getPlugins'
 import { useState, useEffect, useCallback } from 'react'
-import { BN } from '@coral-xyz/anchor'
-import { PluginName } from '@constants/plugins'
 
 export interface usePluginsArgs {
   realmPublicKey: PublicKey | undefined
@@ -14,16 +12,9 @@ export interface usePluginsArgs {
 }
 
 export interface usePluginsReturnType {
-  isLoading: boolean
-  initilizerError: Error | undefined
-  plugins: PluginName[]
-  voterWeightRecord: PublicKey | undefined
-  maxVoterWeightRecord: PublicKey | undefined
-  voterWeight: BN | undefined
+  plugins: Array<any>
   updateVoterWeight: () => Promise<TransactionInstruction[]>
-  getVoterWeightRecord: () => void
-  getMaxVoteWeightRecord: () => void
-  createVoterWeightRecord: () => void
+  createVoterWeightRecords: () => void
 }
 
 export const usePlugins = ({
@@ -32,14 +23,7 @@ export const usePlugins = ({
   walletPublicKey,
 }: usePluginsArgs): usePluginsReturnType => {
   const { connection } = useConnection()
-  const [voterWeightRecord, setVoterWeightRecord] = useState<PublicKey>()
-  const [maxVoterWeightRecord, setMaxVoterWeightRecord] = useState<
-    PublicKey | undefined
-  >()
-  const [voterWeight, setVoterWeight] = useState<BN | undefined>()
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [plugins, setPlugins] = useState<PluginName[]>([])
-  const [initilizerError, setInitilizeError] = useState<Error>()
+  const [plugins, setPlugins] = useState<Array<PluginData>>([])
 
   const fetchPlugins = useCallback(() => {
     if (!realmPublicKey || !governanceMintPublicKey || !walletPublicKey) {
@@ -52,36 +36,31 @@ export const usePlugins = ({
         getPlugins({
           realmPublicKey,
           governanceMintPublicKey,
+          walletPublicKey,
           connection,
         }),
     })
-  }, [connection, governanceMintPublicKey, realmPublicKey, walletPublicKey])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realmPublicKey, governanceMintPublicKey, walletPublicKey])
 
   useEffect(() => {
-    setIsLoading(true)
-    fetchPlugins()
-      .then((plugins) => {
-        setPlugins(plugins)
-      })
-      .catch((err) => {
-        setInitilizeError(err as Error)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
-
     // TODO implement getting and setting voterWeight, maxVoterWeightRecord, voterWeightRecord
     // from the plugin info object
-  }, [realmPublicKey, governanceMintPublicKey, walletPublicKey, fetchPlugins])
+    const fetchAndSetPlugins = async () => {
+      if (!realmPublicKey || !governanceMintPublicKey || !walletPublicKey) {
+        return
+      }
+      const newPlugins = await fetchPlugins()
+      setPlugins(newPlugins)
+    }
 
-  const createVoterWeightRecord = () => {}
+    fetchAndSetPlugins()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realmPublicKey, governanceMintPublicKey, walletPublicKey])
 
-  const getMaxVoteWeightRecord = () => {}
-
-  const getVoterWeightRecord = () => {}
-
-  // TODO: make sure to handle no plugin case
-  // default voteWeight is defaultTokenOwnerRecord
+  const createVoterWeightRecords = () => {
+    return
+  }
 
   const updateVoterWeight = (): Promise<TransactionInstruction[]> => {
     if (!realmPublicKey || !governanceMintPublicKey || !walletPublicKey) {
@@ -110,11 +89,7 @@ export const usePlugins = ({
     initilizerError,
     plugins,
     updateVoterWeight,
-    getVoterWeightRecord,
-    getMaxVoteWeightRecord,
-    createVoterWeightRecord,
-    voterWeight,
-    voterWeightRecord,
-    maxVoterWeightRecord,
+    plugins,
+    createVoterWeightRecords,
   }
 }
