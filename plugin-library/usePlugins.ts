@@ -12,7 +12,8 @@ export interface usePluginsArgs {
 }
 
 export interface usePluginsReturnType {
-  plugins: Array<any>
+  isReady: boolean
+  plugins: Array<PluginData>
   updateVoterWeight: () => Promise<TransactionInstruction[]>
   createVoterWeightRecords: () => void
 }
@@ -24,6 +25,14 @@ export const usePlugins = ({
 }: usePluginsArgs): usePluginsReturnType => {
   const { connection } = useConnection()
   const [plugins, setPlugins] = useState<Array<PluginData>>([])
+  const [isReady, setIsReady] = useState(false)
+
+  // const pluginProcessor: Record<PluginName, () => BN> = {
+  //   gateway: () => GatewayProcessor.getVotingPower(),
+  //   QV: () => QVProcessor.getVotingPower(),
+  // }
+
+  // setVotingPower(pluginProcessor[pluginName]())
 
   const fetchPlugins = useCallback(() => {
     if (!realmPublicKey || !governanceMintPublicKey || !walletPublicKey) {
@@ -52,11 +61,11 @@ export const usePlugins = ({
       }
       const newPlugins = await fetchPlugins()
       setPlugins(newPlugins)
+      setIsReady(true)
     }
 
     fetchAndSetPlugins()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realmPublicKey, governanceMintPublicKey, walletPublicKey])
+  }, [realmPublicKey, governanceMintPublicKey, walletPublicKey, fetchPlugins])
 
   const createVoterWeightRecords = () => {
     return
@@ -85,11 +94,9 @@ export const usePlugins = ({
   }
 
   return {
-    isLoading,
-    initilizerError,
+    isReady,
     plugins,
     updateVoterWeight,
-    plugins,
     createVoterWeightRecords,
   }
 }
