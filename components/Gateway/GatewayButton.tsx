@@ -5,6 +5,9 @@ import useVotePluginsClientStore from '../../stores/useVotePluginsClientStore'
 
 export const GatewayButton: FC = () => {
   const { setGatewayToken, state } = useGatewayPluginStore()
+
+  // TODO QV-2 figure out how to set the token and use client from useGatewayVoterWeightPlugin
+  // const {plugin} = useGatewayVoterWeightPlugin()
   const currentClient = useVotePluginsClientStore(
     (s) => s.state.currentRealmVotingClient
   )

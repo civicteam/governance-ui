@@ -11,7 +11,6 @@ import {
 import { Transaction, TransactionInstruction } from '@solana/web3.js'
 import { sendTransaction } from '@utils/send'
 import { useState, useEffect, useMemo } from 'react'
-import useVotePluginsClientStore from 'stores/useVotePluginsClientStore'
 import useGatewayPluginStore from '../../GatewayPlugin/store/gatewayPluginStore'
 import { GatewayButton } from '@components/Gateway/GatewayButton'
 import { getRegistrarPDA, getVoterWeightRecord } from '@utils/plugin/accounts'
@@ -23,15 +22,15 @@ import {
   useRealmCouncilMintInfoQuery,
 } from '@hooks/queries/mintInfo'
 import useLegacyConnectionContext from '@hooks/useLegacyConnectionContext'
+import { useGatewayVoterWeightPlugin } from 'VoterWeightPlugins'
 
 // TODO lots of overlap with NftBalanceCard here - we need to separate the logic for creating the Token Owner Record
 // from the rest of this logic
 const GatewayCard = () => {
   const wallet = useWalletOnePointOh()
   const connected = !!wallet?.connected
-  const client = useVotePluginsClientStore(
-    (s) => s.state.currentRealmVotingClient
-  )
+  const { plugin } = useGatewayVoterWeightPlugin()
+  const client = plugin?.client
   const gatekeeperNetwork = useGatewayPluginStore(
     (s) => s.state.gatekeeperNetwork
   )
@@ -62,12 +61,12 @@ const GatewayCard = () => {
       realm!.pubkey,
       realm!.account.communityMint,
       wallet!.publicKey!,
-      client.client!.program.programId
+      client!.program.programId
     )
     const { registrar } = await getRegistrarPDA(
       realm!.pubkey,
       realm!.account.communityMint,
-      client.client!.program.programId
+      client!.program.programId
     )
     // If a vote weight record is needed (i.e. the realm has a voter weight plugin)
     // but doesn't exist yet, add the instruction to create it to the list
@@ -75,7 +74,7 @@ const GatewayCard = () => {
       !records.voteWeightRecord.accountExists &&
       records.voteWeightRecord.accountRequired
     ) {
-      const createVoterWeightRecordIx = await (client.client as GatewayClient).program.methods
+      const createVoterWeightRecordIx = await (client as GatewayClient).program.methods
         .createVoterWeightRecord(wallet!.publicKey!)
         .accounts({
           voterWeightRecord: voterWeightPk,

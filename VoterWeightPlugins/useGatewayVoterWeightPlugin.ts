@@ -1,15 +1,16 @@
 import { GATEWAY_PLUGINS_PKS } from '@constants/plugins'
 import { useRealmVoterWeightPlugins } from '@hooks/useRealmVoterWeightPlugins'
 
-import {useVoterWeightPluginReadinessReturnType} from "./lib/types";
+import { useVoterWeightPluginReadinessReturnType } from './lib/types'
+import { PublicKey } from '@solana/web3.js'
 
 export interface useGatewayVoterWeightPluginReturnType
   extends useVoterWeightPluginReadinessReturnType {
-  gatekeeperNetwork: string
+  gatekeeperNetwork: PublicKey | null
 }
 
 type GatewayPluginParams = {
-  gatekeeperNetwork: string
+  gatekeeperNetwork: PublicKey | null
 }
 
 export const useGatewayVoterWeightPlugin = (): useGatewayVoterWeightPluginReturnType => {
@@ -28,5 +29,6 @@ export const useGatewayVoterWeightPlugin = (): useGatewayVoterWeightPluginReturn
     isReady,
     gatekeeperNetwork,
     isEnabled,
+    plugin: gatewayPlugin,
   }
 }
