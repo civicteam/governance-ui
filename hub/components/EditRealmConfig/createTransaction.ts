@@ -173,7 +173,12 @@ export async function createTransaction(
         ? currentConfig.configAccount.communityTokenConfig.voterWeightAddin
         : undefined;
 
-      const instruction = currentConfig.civicPassType
+      const existingRegistrarAccount = await gatewayClient.getRegistrarAccount(
+        realmPublicKey,
+        config.communityMint.publicKey,
+      );
+
+      const instruction = existingRegistrarAccount
         ? await configureCivicRegistrarIx(
             realmAccount,
             gatewayClient,
