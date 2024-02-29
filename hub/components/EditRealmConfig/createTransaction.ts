@@ -218,8 +218,6 @@ export async function createTransaction(
         config.communityMint.publicKey,
       );
 
-      debugger;
-      // Only registrar creation is possible at present, using default coefficients (no configuration of an existing registrar)
       const instruction = existingRegistrarAccount
         ? await configureQuadraticRegistrarIx(
             realmAccount,
