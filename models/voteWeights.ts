@@ -336,8 +336,20 @@ export class VoterWeight implements VoterWeightInterface {
     }
   }
 
-  getTokenRecordToCreateProposal(config: GovernanceConfig) {
-    // Prefer community token owner record as proposal owner
+  getTokenRecordToCreateProposal(
+    config: GovernanceConfig,
+    voteByCouncil: boolean
+  ) {
+    // if the vote is by council, prefer council token
+    if (voteByCouncil) {
+      if (this.councilTokenRecord) {
+        return this.councilTokenRecord
+      }
+      if (this.communityTokenRecord) {
+        return this.communityTokenRecord
+      }
+    }
+    // otherwise prefer community token owner record as proposal owner
     if (this.hasMinCommunityWeight(config.minCommunityTokensToCreateProposal)) {
       return this.communityTokenRecord!
     }
@@ -345,7 +357,7 @@ export class VoterWeight implements VoterWeightInterface {
       return this.councilTokenRecord!
     }
 
-    throw new Error('Not enough vote weight to create proposal')
+    throw new Error('Current wallet has no Token Owner Records')
   }
 }
 
