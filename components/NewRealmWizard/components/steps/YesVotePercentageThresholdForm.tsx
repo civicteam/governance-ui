@@ -69,7 +69,6 @@ export default function YesVotePercentageForm({
     control,
     setValue,
     handleSubmit,
-    reset,
     watch,
     formState: { isValid },
   } = useForm({
@@ -82,7 +81,8 @@ export default function YesVotePercentageForm({
     : forCouncil
     ? 'councilYesVotePercentage'
     : 'yesVotePercentage'
-  const yesVotePercentage = watch(fieldName) || 0
+  const percentageValue = !formData.isQuadratic ? 60 : 5
+  const yesVotePercentage = watch(fieldName) || percentageValue
 
   useEffect(() => {
     updateUserInput(
@@ -98,7 +98,6 @@ export default function YesVotePercentageForm({
     onSubmit({ step: currentStep, data: values })
   }
 
-  const percentageValue = !formData.isQuadratic ? 60 : 5
   useEffect(() => {
     setValue(fieldName, percentageValue)
   }, [fieldName, formData.isQuadratic, percentageValue, setValue])
@@ -118,6 +117,7 @@ export default function YesVotePercentageForm({
         <Controller
           name={fieldName}
           control={control}
+          defaultValue={percentageValue}
           render={({ field, fieldState: { error } }) => (
             <FormField
               title={
@@ -127,11 +127,7 @@ export default function YesVotePercentageForm({
               }
               description=""
             >
-              <InputRangeSlider
-                field={field}
-                error={error?.message}
-                placeholder={percentageValue.toString()}
-              />
+              <InputRangeSlider field={field} error={error?.message} />
             </FormField>
           )}
         />
@@ -152,7 +148,9 @@ export default function YesVotePercentageForm({
               ? 'Typically, newer DAOs start their community approval quorums around 60% of total token supply.'
               : "Setting a high percentage approval quorum may result in proposals never passing in a quadratic voting DAO, as the voting power is influenced by token distribution. It's recomended to start with a low percentage and adjust as needed."}
           </Text>
-        ) : forCouncil && formData?.memberAddresses?.length >= 0 ? (
+        ) : forCouncil &&
+          formData?.memberAddresses?.length >= 0 &&
+          !formData.isQuadratic ? (
           <>
             <Text level="1">
               With {formData.memberAddresses.length} members added to your{' '}
