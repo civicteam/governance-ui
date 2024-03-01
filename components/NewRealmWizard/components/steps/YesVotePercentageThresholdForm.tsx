@@ -69,6 +69,7 @@ export default function YesVotePercentageForm({
     control,
     setValue,
     handleSubmit,
+    reset,
     watch,
     formState: { isValid },
   } = useForm({
@@ -97,6 +98,11 @@ export default function YesVotePercentageForm({
     onSubmit({ step: currentStep, data: values })
   }
 
+  const percentageValue = !formData.isQuadratic ? 60 : 5
+  useEffect(() => {
+    setValue(fieldName, percentageValue)
+  }, [fieldName, formData.isQuadratic, percentageValue, setValue])
+
   return (
     <form
       onSubmit={handleSubmit(serializeValues)}
@@ -112,7 +118,6 @@ export default function YesVotePercentageForm({
         <Controller
           name={fieldName}
           control={control}
-          defaultValue={60}
           render={({ field, fieldState: { error } }) => (
             <FormField
               title={
@@ -125,7 +130,7 @@ export default function YesVotePercentageForm({
               <InputRangeSlider
                 field={field}
                 error={error?.message}
-                placeholder="60"
+                placeholder={percentageValue.toString()}
               />
             </FormField>
           )}
@@ -143,8 +148,9 @@ export default function YesVotePercentageForm({
       >
         {forCommunity ? (
           <Text level="1">
-            Typically, newer DAOs start their community approval quorums around
-            60% of total token supply.
+            {!formData.isQuadratic
+              ? 'Typically, newer DAOs start their community approval quorums around 60% of total token supply.'
+              : "Setting a high percentage approval quorum may result in proposals never passing in a quadratic voting DAO, as the voting power is influenced by token distribution. It's recomended to start with a low percentage and adjust as needed."}
           </Text>
         ) : forCouncil && formData?.memberAddresses?.length >= 0 ? (
           <>
@@ -161,7 +167,9 @@ export default function YesVotePercentageForm({
           </>
         ) : (
           <Text level="1">
-            Typically, newer DAOs start their approval percentage around 60%.
+            {!formData.isQuadratic
+              ? 'Typically, newer DAOs start their approval percentage around 60%.'
+              : "Setting a high percentage approval quorum may result in proposals never passing in a quadratic voting DAO. It's recomended to start with a low percentage and adjust as needed."}
           </Text>
         )}
       </AdviceBox>
