@@ -6,10 +6,10 @@ import useSelectedRealmPubkey from '@hooks/selectedRealm/useSelectedRealmPubkey'
 import VanillaVotingPower from './Power/Vanilla/VanillaVotingPower'
 import { Deposit } from './Power/Vanilla/Deposit'
 import { useRealmVoterWeightPlugins } from '@hooks/useRealmVoterWeightPlugins'
-import {PluginName} from "@constants/plugins";
-import {VotingPowerCards} from "@components/GovernancePower/Power/VotingPowerCards";
+import { PluginName } from '@constants/plugins'
+import { VotingPowerCards } from '@components/GovernancePower/Power/VotingPowerCards'
 
-type VotingPowerDisplayType = PluginName | 'composite';
+type VotingPowerDisplayType = PluginName | 'composite'
 
 export default function GovernancePowerForRole({
   role,
@@ -25,10 +25,12 @@ export default function GovernancePowerForRole({
   const wallet = useWalletOnePointOh()
   const connected = !!wallet?.connected
 
-  const { result: kind } = useAsync<VotingPowerDisplayType | undefined>(async () => {
+  const { result: kind } = useAsync<
+    VotingPowerDisplayType | undefined
+  >(async () => {
     if (realmPk === undefined) return undefined
     // if there are multiple plugins, show the generic plugin voting power
-    if ((plugins?.voterWeight.length ?? 0) > 1) return 'composite';
+    if ((plugins?.voterWeight.length ?? 0) > 1) return 'composite'
     return determineVotingPowerType(connection, realmPk, role)
   }, [connection, realmPk, role])
 
@@ -39,14 +41,15 @@ export default function GovernancePowerForRole({
   }
   return (
     <>
-      {role === 'community' ? <VotingPowerCards role={role} {...props} />
-          // council
-          : kind === 'vanilla' ? (
-              <div>
-                <VanillaVotingPower role="council" {...props} />
-                <Deposit role="council" />
-              </div>
-          ) : null}
+      {role === 'community' ? (
+        <VotingPowerCards role={role} {...props} />
+      ) : // council
+      kind === 'vanilla' ? (
+        <div>
+          <VanillaVotingPower role="council" {...props} />
+          <Deposit role="council" />
+        </div>
+      ) : null}
     </>
   )
 }
