@@ -1,15 +1,19 @@
-import {ProgramAccount, TokenOwnerRecord} from "@solana/spl-governance";
-import {CalculatedWeight, UseVoterWeightPluginsArgs, VoterWeightPluginInfo} from "../lib/types";
-import {calculateVoterWeight} from "../lib/calculateVoterWeights";
-import {useAsync, UseAsyncReturn} from "react-async-hook";
+import { ProgramAccount, TokenOwnerRecord } from '@solana/spl-governance'
+import {
+  CalculatedWeight,
+  UseVoterWeightPluginsArgs,
+  VoterWeightPluginInfo,
+} from '../lib/types'
+import { calculateVoterWeight } from '../lib/calculateVoterWeights'
+import { useAsync, UseAsyncReturn } from 'react-async-hook'
 import {PublicKey} from "@solana/web3.js";
 
 type Args = UseVoterWeightPluginsArgs & {
-    realmPublicKey?: PublicKey
-    governanceMintPublicKey?: PublicKey
-    walletPublicKeys?: PublicKey[]
-    plugins?: VoterWeightPluginInfo[],
-    tokenOwnerRecords?: ProgramAccount<TokenOwnerRecord>[]
+  realmPublicKey?: PublicKey
+  governanceMintPublicKey?: PublicKey
+  walletPublicKeys?: PublicKey[]
+  plugins?: VoterWeightPluginInfo[]
+  tokenOwnerRecords?: ProgramAccount<TokenOwnerRecord>[]
 }
 
 const argsAreSet = (args: Args): args is Required<Args> =>
@@ -35,7 +39,7 @@ export const useCalculatedVoterWeights = (args: Args) : UseAsyncReturn<Calculate
             args.realmPublicKey?.toString(),
             args.governanceMintPublicKey?.toString(),
             args.walletPublicKeys?.map(pubkey => pubkey.toString()).join(","),
-            args.tokenOwnerRecords?.length,
+            args.tokenOwnerRecords?.map(tor => tor.account.governingTokenDepositAmount).join(","),
             args.plugins?.length
         ]
     )

@@ -11,6 +11,7 @@ interface UpdateVoterWeightRecordArgs {
   governanceMintPublicKey: PublicKey
   plugins?: VoterWeightPluginInfo[]
   action?: VoterWeightAction
+  target?: PublicKey
 }
 
 export const updateVoterWeight = async ({
@@ -18,7 +19,8 @@ export const updateVoterWeight = async ({
   realmPublicKey,
   governanceMintPublicKey,
   plugins = [],
-  action
+  action,
+  target
 }: UpdateVoterWeightRecordArgs): Promise<{ pre: TransactionInstruction[], post: TransactionInstruction[]}> => {
   const preIxes: TransactionInstruction[] = []
   const postIxes: TransactionInstruction[] = []
@@ -36,12 +38,13 @@ export const updateVoterWeight = async ({
       realmPublicKey,
       governanceMintPublicKey,
       action,
-      getVoterWeightRecordCallback
+      getVoterWeightRecordCallback,
+      target
     )
     preIxes.push(...updateVoterWeightRecordIx.pre)
     postIxes.push(...updateVoterWeightRecordIx.post || [])
 
-    getVoterWeightRecordCallback = async () => plugin.client.getVoterWeightRecordPDA(realmPublicKey, governanceMintPublicKey, walletPublicKey).voterWeightPk
+    getVoterWeightRecordCallback = async () => (await plugin.client.getVoterWeightRecordPDA(realmPublicKey, governanceMintPublicKey, walletPublicKey)).voterWeightPk
   }
 
   return { pre: preIxes, post: postIxes }
