@@ -295,6 +295,8 @@ const REALM = () => {
           relevantTokenRecord.pubkey
         )
         if (client.client instanceof NftVoterClient === false) {
+
+          console.log("PLUGIN ADDRESSES pages/dao/ index.tsx", plugin?.voterWeightPk);
           await withCastVote(
             instructions,
             realmInfo!.programId,

@@ -98,6 +98,9 @@ const createDelegatorVote = async ({
     tokenOwnerRecordPk
     //createCastNftVoteTicketIxs
   )
+
+  console.log("PLUGIN ADDRESSES", pluginAddresses);
+
   await withCastVote(
     castVoteIxs,
     realm.owner,
@@ -239,6 +242,8 @@ export async function castVote(
       : proposal.account.governingTokenMint
 
   const castVoteIxs: TransactionInstruction[] = []
+
+  console.log("PLUGIN ADDRESSES VWR", plugin?.voterWeightPk);
   await withCastVote(
     castVoteIxs,
     programId,

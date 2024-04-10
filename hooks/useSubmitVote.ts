@@ -225,6 +225,8 @@ export const useCreateVoteIxs = () => {
                 torPk
               )
 
+              console.log("PLUGIN ADDRESSES votingPluginHelpers", votingPluginHelpers?.voterWeightPk);
+
               await withCastVote(
                 instructions,
                 realm.owner,
