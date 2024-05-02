@@ -40,8 +40,6 @@ export const DEFAULT_QV_CONFIG = {
   maxVotingProgramId: undefined, // the QV plugin does not use a max voting weight record.
 };
 
-const INITIAL_CUSTOM_CONFIG = {};
-
 export const PLUGIN_DISPLAY_NAMES = {
   [DEFAULT_NFT_VOTER_PLUGIN]: 'NFT Plugin',
   [DEFAULT_VSR_CONFIG.votingProgramId.toBase58() || '']: 'VSR Plugin',
@@ -148,16 +146,8 @@ function isChainablePlugin(config: Props['structure']) {
   return isCivicConfig(config) || isQVConfig(config);
 }
 
-function isDefaultConfig(config: Props['structure']) {
-  return (
-    config.votingProgramId === undefined &&
-    config.maxVotingProgramId === undefined
-  );
-}
-
 function isCustomConfig(config: Props['structure']) {
   return (
-    !isDefaultConfig(config) &&
     !isNFTConfig(config) &&
     !isVSRConfig(config) &&
     !isCivicConfig(config) &&
@@ -375,17 +365,15 @@ export function VotingStructureSelector(props: Props) {
               ...(props.allowQV ? [DEFAULT_QV_CONFIG] : []),
               ...(isCustomConfig(props.currentStructure)
                 ? [props.currentStructure]
-                : [INITIAL_CUSTOM_CONFIG]),
+                : [{}]),
               'default',
             ] as const)
               .filter((config) => {
                 if (typeof config === 'string') {
                   return !areConfigsEqual({}, props.structure);
                 }
-                return (
-                  config === INITIAL_CUSTOM_CONFIG ||
-                  !areConfigsEqual(config, props.structure)
-                );
+
+                return !areConfigsEqual(config, props.structure);
               })
               .map((config, i) => (
                 <DropdownMenu.Item
