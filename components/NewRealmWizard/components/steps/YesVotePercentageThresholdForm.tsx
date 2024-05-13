@@ -18,7 +18,7 @@ export const CommunityYesVotePercentageSchema = {
     .number()
     .transform((value) => (isNaN(value) ? 0 : value))
     .max(100, 'Approval cannot require more than 100% of votes')
-    .min(1, 'Approval must be at least 1% of votes')
+    .moreThan(0, 'Approval must be greanter than 0 votes')
     .required('Required'),
 }
 
